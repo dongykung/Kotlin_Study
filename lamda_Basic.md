@@ -25,7 +25,8 @@ button.setOnClickListener {
     println("clicked")
 }
 ```
-이처럼 람다는 메서드가 하나뿐인 익명 객체 대신 사용할 수 있고 함수를 값처럼 다룰 수 있습니다.
+이처럼 람다는 메서드가 하나뿐인 익명 객체 대신 사용할 수 있고 함수를 값처럼 다룰 수 있습니다. <br>
+함수 타입과 람다식은 재사용하기 좋은 코드를 만들 때 사용할 수 있는 좋은 도구 입니다.
 
 <br>
 <br>
@@ -109,3 +110,79 @@ public inline fun <C : Appendable> CharSequence.filterTo(destination: C, predica
 ```
 `predicate` 파라미터는 문자를 파라미터로 받고 Boolean 결괏값을 반환합니다.<br>
 filter 함수가 돌려주는 결과 문자열에 인자로 받은 문자가 남아 있기를 바라면 true를 반환하고, 문자열에서 거르고 싶다면 false를 반환하면 원하는 결과를 얻을 수 있습니다.
+
+<br>
+
+### 함수 타입의 파라미터에 대해 기본값을 지정할 수 있고, Null이 될 수 있다
+흔히 사용하는 `joinToString()`을 예시로 들어보겠습니다. 
+```kotlin
+fun main() {
+    val languages = listOf("Kotlin", "Swift", "C++")
+    println(languages.joinToString()) // Kotlin, Swift, C++
+}
+public fun <T> Iterable<T>.joinToString(..., transform: ((T) -> CharSequence)? = null): String {
+    return joinTo(StringBuilder(), separator, prefix, postfix, limit, truncated, transform).toString()
+}
+```
+trasnfrom 람다에 기본값이 있기 때문에 `joinToString`을 사용할 때 매번 함수 호출을 안해도 됩니다.
+
+<br>
+
+### 함수를 함수에서 반환
+함수가 함수를 반환하는 경우는 언제일까요? <br>
+아래 예시를 통해 알아보겠습니다.
+```kotlin
+fun createGraterThanChecker(threshold: Int): (Int) -> Boolean {
+    return { number -> number > threshold }
+}
+
+fun main() {
+    val isGreaterThan10 = createGraterThanChecker(10)
+    println("5가 10보다 큰가? ${isGreaterThan10(5)}") // false
+    println("15는 10보다 큰가? ${isGreaterThan10(15)}") // true
+}
+```
+함수를 반환하기 위해선 return 식에 람다, 멤버 참조, 함수 타입의 값을 계산하는 식 등을 넣으면 됩니다.
+
+<br>
+
+---
+
+## 함수 타입: 자세한 구현
+Kotlin의 함수 타입은 사실 일반 인터페이스 입니다. 함수 타입의 변수는 `FunctionN` 인터페이스를 구현합니다. <br>
+함수 파라미터 개수에 따라 `Function0<R>`부터 `Function1<P1, R>`등으로 이어집니다. 각 인터페이스에는  `invoke`라는 메서드가 정의되어 있습니다
+```kotlin
+fun mySum(operation: () -> Int) {
+    val result = operation()
+    println("result = $result")
+}
+
+fun main() {
+    mySum { 5 }
+}
+// 디컴파일
+public interface Function0<out R> : kotlin.Function<R> {
+    public abstract operator fun invoke(): R
+}
+
+public final class MainActivityKt {
+   public static final void mySum(@NotNull Function0 operation) {
+      Intrinsics.checkNotNullParameter(operation, "operation");
+      int result = ((Number)operation.invoke()).intValue();
+      System.out.println("result = " + result);
+   }
+
+   public static final void main() {
+      mySum(MainActivityKt::main$lambda$0);
+   }
+
+   // $FF: synthetic method
+   public static void main(String[] args) {
+      main();
+   }
+
+   private static final int main$lambda$0() {
+      return 5;
+   }
+}
+```
