@@ -8,7 +8,6 @@
 예전 자바8 이전에서는 익명 내부 클래스를 사용했는데요 람다와 어떤 차이가 있을가요?
 
 ```kotlin
-// 메서드가 하나뿐인 인터페이스(SAM)
 public interface OnClickListener {
     void onClick(View var1);
 }
