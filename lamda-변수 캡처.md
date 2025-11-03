@@ -86,5 +86,62 @@ public class Ref {
     }
 }
 ```
-이는 컴파일러가 생성한 래퍼 클래스로 감싸 `Heap 영역`에 저장되게 합니다. <br>
-함수 또한 `static final`로 지정되어 
+이는 컴파일러가 생성한 래퍼 클래스로 감싸 `Heap 영역`에 저장되게 합니다. <br> <br>
+
+만약 로컬 변수가 `Stack 영역`에 저장된다면 어덯게 될가요? <br>
+람다가 함수 종료로 사라진 Stack 변수를 참조하려 한다면 잘못된 메모리에 접근하게 되어 크래시가 날 수 있습니다.
+<br><br>
+즉 Ref 래퍼 클래스로 감싸져 `Heap 영역`에 저장되며 래퍼에 대한 참조를 람다 코드와 함께 저장하기 때문에 나중에 변경하거나 읽을 수 있습니다.
+실제로 counterFactory 함수 안의 람다가 count++를 호출하는 코드는, 컴파일 이후 실제로 아래와 같이 변경됩니다.
+```kotlin
+   private static final int counterFactory$lambda$0(Ref.IntRef $count) {
+      int var1 = $count.element++;
+      System.out.println("캡처된 count 값: " + $count.element);
+      return $count.element;
+   }
+```
+count는 Heap에 있는 `Ref.IntRef()`객체를 가리키고 람다는 그 안의 element 필드를 직접 수정합니다.
+
+<br> <br>
+
+### 람다를 이벤트 핸들러나 다른 비동기적으로 실행되는 코드로 활용할 때
+로컬 변수 변경은 람다가 실행될 때만 일어납니다. 예를 들어 아래 코드는 버튼 클릭 횟수를 제대로 셀 수 없습니다.
+```kotlin
+fun tryToCountButtonClicks(button: Button): Int {
+    var clicks = 0
+    button.onClick { clicks ++ }
+    return cliks
+}
+```
+이 함수는 항상 0을 반환하게 됩니다.<br>
+onClick 핸들러는 호출될 때마다 clicks의 값을 증가시키지만 그 값의 변경을 관찰할 수 없습니다. 핸들러는 함수가 종료된 다음에 호출되기 때문입니다.
+
+<br><br>
+다른 예시 코드를 확인해보겠습니다.
+```kotlin
+fun fakeNetworkRequest(onComplete: (String) -> Unit) {
+    Thread {
+        Thread.sleep(5000)
+        onComplete("Hello, World!")
+    }.start()
+}
+
+fun main() {
+    var retryCount = 0
+
+    println("데이터 요청 시작 (retryCount: $retryCount")
+
+    fakeNetworkRequest { response ->
+        retryCount++
+        println("응답: $response")
+        println("현재 재시도 횟수: $retryCount")
+    }
+
+    println("종료됨")
+}
+데이터 요청 시작 (retryCount: 0
+종료됨
+응답: Hello, World!
+현재 재시도 횟수: 1
+```
+위 코드 또한 retryCount가 `Ref.IntRef()` 래퍼로 감싸집니다.
