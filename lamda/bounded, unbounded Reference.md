@@ -114,7 +114,7 @@ public final class MainActivityKt {
 }
 ```
 - 콜백 전달할 때 많이 사용합니다. (ex: viewModel::updateTitle)
-- 수신 객체를 receiver 필드에 저장하기 위해 매번 새로운 Function 객체를 new로 생성하고 있습니다.
+- 수신 객체를 receiver 필드에 저장하기 위해 새로운 Function 객체를 new로 생성하고 있습니다.
 - 말 그대로 특정 인스턴스의 멤버 참조가 필요할 때 사용합니다.
 
 ## 정리
